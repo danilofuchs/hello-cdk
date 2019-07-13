@@ -1,6 +1,7 @@
 import sqs = require("@aws-cdk/aws-sqs");
 import cdk = require("@aws-cdk/core");
 import lambda = require("@aws-cdk/aws-lambda");
+import codeBuild = require("@aws-cdk/aws-codebuild");
 import { SqsEventSource } from "@aws-cdk/aws-lambda-event-sources";
 
 export class HelloCdkStack extends cdk.Stack {
@@ -25,5 +26,32 @@ export class HelloCdkStack extends cdk.Stack {
 
     logQueue.addEventSource(new SqsEventSource(queue));
     logQueuePy.addEventSource(new SqsEventSource(queue));
+
+    const gitHubSource = codeBuild.Source.gitHub({
+      owner: "danilofuchs",
+      repo: "hello-cdk",
+      webhook: true,
+      webhookFilters: [
+        codeBuild.FilterGroup.inEventOf(codeBuild.EventAction.PUSH).andBranchIs(
+          "master"
+        )
+      ],
+      reportBuildStatus: true
+    });
+
+    const build = new codeBuild.Project(this, "Codebuild", {
+      source: gitHubSource,
+      buildSpec: codeBuild.BuildSpec.fromObject({
+        version: "0.2",
+        phases: {
+          build: {
+            commands: ['echo "Hello, CodeBuild!"']
+          }
+        }
+      }),
+      environment: {
+        buildImage: codeBuild.LinuxBuildImage.UBUNTU_14_04_NODEJS_10_14_1
+      }
+    });
   }
 }
