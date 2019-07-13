@@ -39,13 +39,19 @@ export class HelloCdkStack extends cdk.Stack {
       reportBuildStatus: true
     });
 
-    const build = new codeBuild.Project(this, "Codebuild", {
+    new codeBuild.Project(this, "Codebuild", {
       source: gitHubSource,
       buildSpec: codeBuild.BuildSpec.fromObject({
         version: "0.2",
         phases: {
+          install: {
+            commands: ["npm ci", "npm i -g aws-cdk"]
+          },
           build: {
-            commands: ['echo "Hello, CodeBuild!"']
+            commands: ['echo "Hello, CodeBuild!"', "npm run build"]
+          },
+          post_build: {
+            commands: ["cdk deploy"]
           }
         }
       }),
